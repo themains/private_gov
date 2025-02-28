@@ -1,0 +1,6 @@
+{
+    "type": "error",
+    "message": "Rate limit for domain exceeded",
+    "error_message": "",
+    "nicer_error_message": "There was an unexpected error."
+}
