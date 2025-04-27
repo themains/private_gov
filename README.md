@@ -17,3 +17,11 @@ How common are third-party cookies, trackers, key loggers, etc. on government we
 * [Scrape Blacklight Data Using Scrapy](scripts/privacy_scraper)
 * [Scrape Whotracksme Data](scripts/get_whotracksme_privacy_data.py)
 * [Combine And Analyze](scripts/combine_analyze.ipynb)
+
+## 🔗 Adjacent Repositories
+
+- [themains/private_blacklight](https://github.com/themains/private_blacklight) — Privacy Online and Digital Divide on Online Privacy
+- [themains/domain_knowledge](https://github.com/themains/domain_knowledge) — Domain Knowledge: Learning with pydomains
+- [themains/pwned_pols](https://github.com/themains/pwned_pols) — A third of the politicians have had their data breached at least once. More alarmingly, over one in five have had their sensitive data, such as bank account numbers, biometric data, browsing history, chat logs, credit card CVV, etc., breached.
+- [themains/secure_gov](https://github.com/themains/secure_gov) — We run gov domains using spiderfoot to estimate the security of the government websites.
+- [themains/pwned](https://github.com/themains/pwned) — How Often Are Americans' Accounts Breached?
