@@ -1,27 +1,15 @@
-"""A collection of common utility functions.
-
-* save_mpl_fig (I/O) 
-* split_dataframe
-* split_dataframe2
-* save_excelsheet (I/O)
-* pandas_to_tex (I/O)
-* pprint_dict
-* save_json (I/O)
-* save_jsongz (I/O)
-* read_json (I/O)
-* read_jsons (I/O)
-* read_jsongz (I/O)
-* read_jsongzs (I/O)
-* get_datestr_list
-* normalize_strc
-* unix2datetime
-* read_yaml (I/O)
-* save_dict_to_yaml (I/O)
-* save_svg_as_png (I/O)
-* change_barwidth (mpl)
-* text_to_list (I/O
-* format_tiny_pval_expoential
 """
+Utility functions for plotting, I/O, domain processing, and summary statistics.
+
+Includes:
+- init_mpl_fig, save_mpl_fig
+- pandas_to_tex
+- process_json_files_to_matrix
+- process_bl_json_files
+- calculate_summary_statistics
+- get_registered_domain
+"""
+
 
 import json
 import os
@@ -331,7 +319,7 @@ def get_registered_domain(domain: str) -> str:
     return ext.registered_domain
 
 
-def process_bl_json_files(input_folder: str) -> list:
+def process_bl_json_files(input_folder: str, noisy: bool = True) -> list:
     """
     Extracts web tracking metrics from Blacklight JSON privacy reports.
 
@@ -402,6 +390,7 @@ def process_bl_json_files(input_folder: str) -> list:
             rows.append(metrics)
         
         except Exception as e:
-            print(f"Error processing {filename}: {e}")
+            if noisy:
+                print(f"Error processing {filename}: {e}")
             
     return rows
