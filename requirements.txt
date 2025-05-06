@@ -11,3 +11,5 @@ jupyter_nbextensions_configurator
 jupyterthemes
 traitlets==5.9.0
 selenium
+tldextract
+sidetable
