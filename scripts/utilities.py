@@ -394,3 +394,75 @@ def process_bl_json_files(input_folder: str, noisy: bool = True) -> list:
                 print(f"Error processing {filename}: {e}")
             
     return rows
+
+
+def is_valid_html_url(urls: List[str]) -> Tuple[List[str], List[str]]:
+    """
+    Filters a list of URLs to identify likely HTML/JavaScript web pages.
+
+    This function separates URLs into two categories:
+    - Included: URLs likely to return HTML/JS content (e.g., web pages).
+    - Excluded: URLs that point to static or non-HTML resources such as documents, media, archives,
+      known utility files (e.g., robots.txt, sitemap.xml), or installer binaries.
+
+    Parameters
+    ----------
+    urls : List[str]
+        A list of URL strings to be evaluated.
+
+    Returns
+    -------
+    included : List[str]
+        URLs that are likely HTML pages suitable for further scraping or analysis.
+
+    excluded : List[str]
+        URLs filtered out due to matching file extensions or being known utility/static files.
+
+    Notes
+    -----
+    - Filtering is based solely on URL structure (path and filename).
+    - This function does not perform HTTP requests or content-type validation.
+    - Examples of excluded resources include `.pdf`, `.png`, `robots.txt`, `favicon.ico`, etc.
+
+    Examples
+    --------
+    >>> urls = ["https://example.com/index.html", "https://example.com/file.pdf"]
+    >>> included, excluded = is_valid_html_url(urls)
+    >>> print(included)
+    ['https://example.com/index.html']
+    >>> print(excluded)
+    ['https://example.com/file.pdf']
+    """
+    excluded_exts = [
+        "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx",   # Office files
+        "txt", "csv", "tsv", "rtf", "xml", "json",            # Text/data
+        "jpg", "jpeg", "png", "gif", "bmp", "svg", "webp",    # Images
+        "mp3", "mp4", "avi", "mov", "wmv", "mkv", "webm",     # Media
+        "zip", "rar", "gz", "tar", "7z",                      # Archives
+        "exe", "bin", "iso", "apk", "dmg", "msi"              # Binaries
+    ]
+
+    special_excludes = {
+        "robots.txt", "sitemap.xml", "ads.txt", "favicon.ico"
+    }
+
+    included = []
+    excluded = []
+
+    for url in urls:
+        path = urlparse(url).path.lower()
+        basename = os.path.basename(path)
+
+        if basename in special_excludes:
+            excluded.append(url)
+        elif any(basename.endswith("." + ext) for ext in excluded_exts):
+            excluded.append(url)
+        else:
+            included.append(url)
+
+    return included, excluded
+
+# example:
+# urls = df["url"].sample(n = 50, random_state=1).tolist()
+# included, excluded = is_valid_html_url(urls)
+# print(excluded)
