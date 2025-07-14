@@ -8,7 +8,7 @@ from datetime import datetime
 
 class BlacklightSpider(scrapy.Spider):
     name = "blacklight_spider"
-    output_folder = "../../data/cc_json/"
+    output_folder = "../../data/cc_bl_json/"
     log_file = "./blacklight_errors.log"
     blacklight_endpoint = 'https://blacklight-us-ca.api.themarkup.org'
 
@@ -37,7 +37,7 @@ class BlacklightSpider(scrapy.Spider):
     
     def start_requests(self):
         try:
-            df = pd.read_csv("../../data/common_crawl_sample.csv", usecols=["url"])
+            df = pd.read_csv("../../data/common_crawl_sample_n1000.csv", usecols=["url"])
             websites = df["url"].dropna().drop_duplicates().astype(str).tolist()
             self.logger.info(f"Loaded {len(websites)} unique websites")
             

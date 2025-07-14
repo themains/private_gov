@@ -13,7 +13,6 @@ Includes:
 
 import json
 import os
-import re
 from typing import Any, Iterable, List, Optional, Tuple
 from matplotlib.figure import Figure
 from matplotlib.axes import Axes
@@ -21,6 +20,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import tldextract
+from urllib.parse import urlparse
 
 
 def init_mpl_fig(
@@ -344,20 +344,20 @@ def process_bl_json_files(input_folder: str, noisy: bool = True) -> list:
         >>> df_us_bl = pd.DataFrame(process_bl_json_files("../data/us_blacklight_json"))
     """
     rows = []
-    
+
     for filename in os.listdir(input_folder):
         if not filename.endswith(".json"):
             continue
-            
+
         file_path = os.path.join(input_folder, filename)
-        
+
         try:
-            with open(file_path, 'r') as f:
+            with open(file_path, "r") as f:
                 data = json.load(f)
-            
+
             domain_name = filename.replace(".json", "")
             cards = data.get("groups", [])[0].get("cards", [])
-            
+
             metrics = {
                 "domain": domain_name,
                 "ddg_join_ads": 0,
@@ -366,33 +366,39 @@ def process_bl_json_files(input_folder: str, noisy: bool = True) -> list:
                 "session_recording": 0,
                 "key_logging": 0,
                 "fb_pixel": 0,
-                "google_analytics": 0
+                "google_analytics": 0,
             }
-            
+
             for card in cards:
                 card_type = card.get("cardType", "")
                 if card_type == "ddg_join_ads":
                     metrics["ddg_join_ads"] = card.get("bigNumber", 0)
                 elif card_type == "cookies":
                     metrics["third_party_cookies"] = card.get("bigNumber", 0)
-                elif card_type in ["canvas_fingerprinters", "session_recorders", 
-                                 "key_logging", "fb_pixel_events"]:
+                elif card_type in [
+                    "canvas_fingerprinters",
+                    "session_recorders",
+                    "key_logging",
+                    "fb_pixel_events",
+                ]:
                     metric_key = {
                         "canvas_fingerprinters": "canvas_fingerprinting",
                         "session_recorders": "session_recording",
                         "key_logging": "key_logging",
-                        "fb_pixel_events": "fb_pixel"
+                        "fb_pixel_events": "fb_pixel",
                     }[card_type]
                     metrics[metric_key] = 1 if card.get("testEventsFound", False) else 0
                 elif card_type == "ga":
-                    metrics["google_analytics"] = 1 if card.get("testEventsFound", False) else 0
-            
+                    metrics["google_analytics"] = (
+                        1 if card.get("testEventsFound", False) else 0
+                    )
+
             rows.append(metrics)
-        
+
         except Exception as e:
             if noisy:
                 print(f"Error processing {filename}: {e}")
-            
+
     return rows
 
 
@@ -434,17 +440,47 @@ def is_valid_html_url(urls: List[str]) -> Tuple[List[str], List[str]]:
     ['https://example.com/file.pdf']
     """
     excluded_exts = [
-        "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx",   # Office files
-        "txt", "csv", "tsv", "rtf", "xml", "json",            # Text/data
-        "jpg", "jpeg", "png", "gif", "bmp", "svg", "webp",    # Images
-        "mp3", "mp4", "avi", "mov", "wmv", "mkv", "webm",     # Media
-        "zip", "rar", "gz", "tar", "7z",                      # Archives
-        "exe", "bin", "iso", "apk", "dmg", "msi"              # Binaries
+        "pdf",
+        "doc",
+        "docx",
+        "xls",
+        "xlsx",
+        "ppt",
+        "pptx",  # Office files
+        "txt",
+        "csv",
+        "tsv",
+        "rtf",
+        "xml",
+        "json",  # Text/data
+        "jpg",
+        "jpeg",
+        "png",
+        "gif",
+        "bmp",
+        "svg",
+        "webp",  # Images
+        "mp3",
+        "mp4",
+        "avi",
+        "mov",
+        "wmv",
+        "mkv",
+        "webm",  # Media
+        "zip",
+        "rar",
+        "gz",
+        "tar",
+        "7z",  # Archives
+        "exe",
+        "bin",
+        "iso",
+        "apk",
+        "dmg",
+        "msi",  # Binaries
     ]
 
-    special_excludes = {
-        "robots.txt", "sitemap.xml", "ads.txt", "favicon.ico"
-    }
+    special_excludes = {"robots.txt", "sitemap.xml", "ads.txt", "favicon.ico"}
 
     included = []
     excluded = []
@@ -462,7 +498,106 @@ def is_valid_html_url(urls: List[str]) -> Tuple[List[str], List[str]]:
 
     return included, excluded
 
+
 # example:
 # urls = df["url"].sample(n = 50, random_state=1).tolist()
 # included, excluded = is_valid_html_url(urls)
 # print(excluded)
+
+
+def url_is_html(url: str) -> bool:
+    """
+    Determines whether a URL likely points to an HTML/JavaScript web page
+    rather than a static or utility file.
+
+    This function checks the file extension and specific filenames in the
+    URL path to exclude non-HTML resources such as images, documents, media,
+    archives, and known utility files (e.g., robots.txt, favicon.ico).
+
+    Parameters
+    ----------
+    url : str
+        A single URL string to evaluate.
+
+    Returns
+    -------
+    bool
+        True if the URL likely points to an HTML page suitable for scraping or analysis,
+        False if it likely points to a static or utility file.
+
+    Notes
+    -----
+    - This function does not make any network requests.
+    - The evaluation is based purely on the URL path and filename.
+    - Excluded file types include: .pdf, .jpg, .mp4, .zip, etc.
+    - Special files like 'robots.txt' and 'sitemap.xml' are also excluded.
+
+    Examples
+    --------
+    >>> is_html_like("https://example.com/index.html")
+    True
+    >>> is_html_like("https://example.com/file.pdf")
+    False
+    >>> is_html_like("https://example.com/robots.txt")
+    False
+    """
+    excluded_exts = [
+        "pdf",
+        "doc",
+        "docx",
+        "xls",
+        "xlsx",
+        "ppt",
+        "pptx",  # Office files
+        "txt",
+        "csv",
+        "tsv",
+        "rtf",
+        "xml",
+        "json",  # Text/data
+        "jpg",
+        "jpeg",
+        "png",
+        "gif",
+        "bmp",
+        "svg",
+        "webp",  # Images
+        "mp3",
+        "mp4",
+        "avi",
+        "mov",
+        "wmv",
+        "mkv",
+        "webm",  # Media
+        "zip",
+        "rar",
+        "gz",
+        "tar",
+        "7z",  # Archives
+        "exe",
+        "bin",
+        "iso",
+        "apk",
+        "dmg",
+        "msi",  # Binaries
+    ]
+    special_excludes = {"robots.txt", "sitemap.xml", "ads.txt", "favicon.ico"}
+
+    try:
+        path = urlparse(url).path.lower()
+        basename = os.path.basename(path)
+
+        # Check against known utility files
+        if basename in special_excludes:
+            return False
+
+        # Extract file extension if present
+        _, ext = os.path.splitext(basename)
+        ext = ext.lstrip(".")
+
+        if ext in excluded_exts:
+            return False
+
+        return True
+    except Exception:
+        return False
