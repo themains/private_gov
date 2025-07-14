@@ -5,5 +5,6 @@
 /scripts/privacy_scraper/.ipynb_checkpoints
 /data/common_crawl
 /data/cc_bl_json/
+scripts/__pycache__/
 /venv/
 /venv*/
